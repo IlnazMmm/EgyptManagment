@@ -29,6 +29,43 @@ def _format_compact(value: int) -> str:
     return f"{value:,}".replace(",", " ")
 
 
+RISK_SCORES = {
+    "Высокий": 0.9,
+    "Средний": 0.6,
+    "Низкий": 0.25,
+    "Не прогнозируется": 0.1,
+}
+
+
+def _build_turnover_trend(stats: dict) -> tuple[list[int], list[int]]:
+    base = max(4, stats["total"])
+    high = stats["high"]
+    medium = stats["medium"]
+    low = stats["low"]
+
+    trend = [
+        max(1, round(base * 0.15 + high * 2 + medium * 0.8)),
+        max(1, round(base * 0.16 + high * 2.1 + medium * 0.85)),
+        max(1, round(base * 0.14 + high * 1.9 + medium * 0.75)),
+        max(1, round(base * 0.17 + high * 2.2 + medium * 0.9)),
+        max(1, round(base * 0.16 + high * 2.0 + medium * 0.85 + low * 0.2)),
+        max(1, round(base * 0.18 + high * 2.3 + medium * 0.95 + low * 0.2)),
+    ]
+    forecast = [max(1, round(v)) for v in _linear_regression_forecast([float(v) for v in trend], 6)]
+    return trend, forecast
+
+
+def _employees_risk_stats() -> dict:
+    rows = fetch_all("SELECT risk FROM employees")
+    total = len(rows)
+    high = sum(1 for row in rows if row["risk"] == "Высокий")
+    medium = sum(1 for row in rows if row["risk"] == "Средний")
+    low = sum(1 for row in rows if row["risk"] == "Низкий")
+    scored = [RISK_SCORES.get(row["risk"], 0.2) for row in rows]
+    avg_risk = round(sum(scored) / len(scored), 2) if scored else 0
+    return {"total": total, "high": high, "medium": medium, "low": low, "avg": avg_risk}
+
+
 FORECAST_BASE = {
     "Продукты питания": {
         "revenue": [420000, 380000, 480000, 700000, 520000, 850000, 610000, 980000, 640000, 720000, 1020000, 690000],
@@ -90,13 +127,16 @@ def login(payload: LoginRequest) -> dict:
 
 @app.get("/api/dashboard")
 def dashboard() -> dict:
+    stats = _employees_risk_stats()
+    trend, forecast_values = _build_turnover_trend(stats)
+
     return {
-        "totalEmployees": 15,
-        "highRisk": 0,
-        "mediumRisk": 12,
-        "avgRisk": 0.48,
-        "trend": [12, 15, 11, 18, 14, 16],
-        "forecast": [11, 14, 13, 17, 15, 17],
+        "totalEmployees": stats["total"],
+        "highRisk": stats["high"],
+        "mediumRisk": stats["medium"],
+        "avgRisk": stats["avg"],
+        "trend": trend,
+        "forecast": forecast_values,
     }
 
 
@@ -151,27 +191,77 @@ def get_employee(employee_id: str) -> dict:
 
 @app.get("/api/reports")
 def reports() -> dict:
+    stats = _employees_risk_stats()
+    total = max(stats["total"], 1)
+    risky_total = stats["high"] + stats["medium"]
+
+    tp = round(risky_total * 0.78)
+    fn = max(0, risky_total - tp)
+    safe_total = max(0, total - risky_total)
+    fp = max(1, round(safe_total * 0.12)) if safe_total else 0
+    tn = max(0, safe_total - fp)
+
+    precision = tp / (tp + fp) if (tp + fp) else 0
+    recall = tp / (tp + fn) if (tp + fn) else 0
+    auc = min(0.99, 0.72 + stats["avg"] * 0.3)
+    accuracy = (tp + tn) / total
+
     return {
-        "auc": "89.0%",
-        "accuracy": "84.0%",
-        "tp": 85,
-        "fp": 12,
-        "fn": 11,
-        "tn": 142,
+        "auc": f"{auc * 100:.1f}%",
+        "accuracy": f"{accuracy * 100:.1f}%",
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "tn": tn,
+        "precision": round(precision, 3),
+        "recall": round(recall, 3),
     }
 
 
 @app.get("/api/sales-analysis")
-def sales_analysis() -> dict:
+def sales_analysis(
+    category: str = Query(default="Продукты питания"),
+    period: str = Query(default="Последующие 30 дней"),
+) -> dict:
+    category_data = FORECAST_BASE.get(category, FORECAST_BASE["Продукты питания"])
+    points_count = PERIOD_POINTS.get(period, PERIOD_POINTS["Последующие 30 дней"])
+
+    revenue_history = category_data["revenue"][:points_count]
+    orders_history = category_data["orders"][:points_count]
+
+    revenue_value = sum(revenue_history)
+    orders_value = sum(orders_history)
+    avg_check = round(revenue_value / orders_value) if orders_value else 0
+    units = round(orders_value * 1.95)
+
+    risk_stats = _employees_risk_stats()
+    returns_ratio = 0.035 + risk_stats["avg"] * 0.02
+    returns = round(units * returns_ratio)
+    conversion = min(12.0, 2.8 + risk_stats["avg"] * 4 + (orders_value / max(points_count, 1)) / 180)
+
+    ranked_products = [
+        ("Йогурт клубничный", revenue_history[-1] * 1.08),
+        ("Чипсы картофельные", revenue_history[-2] * 1.03 if len(revenue_history) > 1 else revenue_history[-1]),
+        ("Орехи миндаль", revenue_history[-3] * 0.98 if len(revenue_history) > 2 else revenue_history[-1]),
+        ("Сок апельсиновый", revenue_history[-1] * 0.96),
+    ]
+    top_products = [item[0] for item in sorted(ranked_products, key=lambda p: p[1], reverse=True)[:3]]
+
+    region_by_category = {
+        "Продукты питания": ["Москва", "Санкт-Петербург", "Казань"],
+        "Напитки": ["Екатеринбург", "Новосибирск", "Нижний Новгород"],
+        "Бытовая химия": ["Ростов-на-Дону", "Самара", "Москва"],
+    }
+
     return {
-        "revenue": "1 250 000 ₽",
-        "orders": 6420,
-        "units": 12350,
-        "returns": 320,
-        "avgCheck": "195 ₽",
-        "conversion": "4.8%",
-        "topProducts": ["Йогурт клубничный", "Чипсы картофельные", "Орехи миндаль"],
-        "regions": ["Москва", "Санкт-Петербург", "Екатеринбург"],
+        "revenue": f"{_format_compact(revenue_value)} ₽",
+        "orders": orders_value,
+        "units": units,
+        "returns": returns,
+        "avgCheck": f"{_format_compact(avg_check)} ₽",
+        "conversion": f"{conversion:.1f}%",
+        "topProducts": top_products,
+        "regions": region_by_category.get(category, region_by_category["Продукты питания"]),
     }
 
 
@@ -246,11 +336,43 @@ def forecast(
 
 @app.get("/api/alerts")
 def alerts() -> dict:
+    stats = _employees_risk_stats()
+
+    items = []
+    if stats["high"]:
+        items.append(
+            {
+                "level": "critical",
+                "title": "Найдено сотрудников с высоким риском ухода",
+                "description": f"Требуется план удержания для {stats['high']} сотрудник(ов).",
+            }
+        )
+    if stats["medium"]:
+        items.append(
+            {
+                "level": "warning",
+                "title": "Повышенный риск в команде",
+                "description": f"У {stats['medium']} сотрудник(ов) средний риск ухода.",
+            }
+        )
+    if stats["avg"] < 0.3:
+        items.append(
+            {
+                "level": "info",
+                "title": "Стабильная ситуация",
+                "description": "Средний риск по команде находится в безопасной зоне.",
+            }
+        )
+
+    critical = sum(1 for item in items if item["level"] == "critical")
+    warning = sum(1 for item in items if item["level"] == "warning")
+    info = sum(1 for item in items if item["level"] == "info")
+
     return {
-        "critical": 0,
-        "warning": 0,
-        "info": 0,
-        "items": [],
+        "critical": critical,
+        "warning": warning,
+        "info": info,
+        "items": items,
     }
 
 
