@@ -21,6 +21,7 @@ docker compose up --build
 - Backend health: `http://localhost:8000/health`
 - Backend DB health: `http://localhost:8000/api/health/db`
 - Postgres: `localhost:5432` (`postgres/postgres`, DB `egypt_management`)
+- pgAdmin: `http://localhost:5050` (`admin@local.dev / admin`)
 
 Остановка:
 
@@ -29,6 +30,16 @@ docker compose down
 ```
 
 > Начальная миграция `migrations/001_init.sql` автоматически применяется при первом старте Postgres.
+
+## Подключение к БД через pgAdmin
+
+1. Откройте `http://localhost:5050` и войдите: `admin@local.dev / admin`.
+2. Добавьте новый Server:
+   - **Host**: `postgres`
+   - **Port**: `5432`
+   - **Maintenance DB**: `egypt_management`
+   - **Username**: `postgres`
+   - **Password**: `postgres`
 
 ## Тестовые учётные данные
 
