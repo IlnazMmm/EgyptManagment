@@ -8,6 +8,18 @@
 - `frontend/` — SPA на React (Vite).
 - `migrations/` — SQL-миграции для PostgreSQL.
 - `docker-compose.yml` — запуск всего приложения в Docker.
+- `.env.example` — пример переменных окружения (чувствительные данные вынесены в `.env`).
+
+## Настройка переменных окружения
+
+```bash
+cp .env.example .env
+```
+
+При необходимости измените значения в `.env`:
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`
+- `PGADMIN_DEFAULT_EMAIL`, `PGADMIN_DEFAULT_PASSWORD`
+- `DATABASE_URL`
 
 ## Запуск (всё в Docker)
 
@@ -20,8 +32,8 @@ docker compose up --build
 - Frontend: `http://localhost:5173`
 - Backend health: `http://localhost:8000/health`
 - Backend DB health: `http://localhost:8000/api/health/db`
-- Postgres: `localhost:5432` (`postgres/postgres`, DB `egypt_management`)
-- pgAdmin: `http://localhost:5050` (`admin@local.dev / admin`)
+- Postgres: `localhost:5432` (параметры из `.env`)
+- pgAdmin: `http://localhost:5050` (параметры из `.env`)
 
 Остановка:
 
@@ -33,13 +45,13 @@ docker compose down
 
 ## Подключение к БД через pgAdmin
 
-1. Откройте `http://localhost:5050` и войдите: `admin@local.dev / admin`.
+1. Откройте `http://localhost:5050` и войдите под учётными данными из `.env`.
 2. Добавьте новый Server:
-   - **Host**: `postgres`
-   - **Port**: `5432`
-   - **Maintenance DB**: `egypt_management`
-   - **Username**: `postgres`
-   - **Password**: `postgres`
+   - **Host**: `${POSTGRES_HOST}` (в Docker-сети обычно `postgres`)
+   - **Port**: `${POSTGRES_PORT}`
+   - **Maintenance DB**: `${POSTGRES_DB}`
+   - **Username**: `${POSTGRES_USER}`
+   - **Password**: `${POSTGRES_PASSWORD}`
 
 ## Тестовые учётные данные
 

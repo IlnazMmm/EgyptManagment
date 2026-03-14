@@ -6,10 +6,7 @@ from psycopg import connect
 from psycopg.rows import dict_row
 
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/egypt_management",
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost:5432/postgres")
 
 
 @contextmanager
