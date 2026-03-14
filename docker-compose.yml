@@ -1,0 +1,19 @@
+version: '3.9'
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: egypt-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: egypt-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+    restart: unless-stopped

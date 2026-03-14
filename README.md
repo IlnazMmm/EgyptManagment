@@ -15,10 +15,33 @@
   - Прогнозирование
   - Алерты
   - Пользователи
+- `docker-compose.yml` — запуск всего приложения в Docker.
 
-## Быстрый старт
+## Запуск (всё в Docker)
 
-### 1) Backend
+```bash
+docker compose up --build
+```
+
+После запуска:
+
+- Frontend: `http://localhost:5173`
+- Backend health: `http://localhost:8000/health`
+
+Остановка:
+
+```bash
+docker compose down
+```
+
+## Тестовые учётные данные
+
+- `admin / admin123`
+- `manager / manager123`
+
+## Локальный запуск без Docker (опционально)
+
+### Backend
 
 ```bash
 cd backend
@@ -28,26 +51,13 @@ pip install -r requirements.txt
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Проверка API:
-
-```bash
-curl http://localhost:8000/health
-```
-
-### 2) Frontend
+### Frontend
 
 ```bash
 cd frontend
 npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
-
-Открыть в браузере: `http://localhost:5173`
-
-## Тестовые учётные данные
-
-- `admin / admin123`
-- `manager / manager123`
 
 ## API-эндпоинты
 
