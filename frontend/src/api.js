@@ -1,7 +1,16 @@
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
-export async function apiGet(path) {
-  const response = await fetch(`${API_URL}${path}`);
+export async function apiGet(path, params) {
+  const url = new URL(`${API_URL}${path}`, window.location.origin);
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        url.searchParams.set(key, value);
+      }
+    });
+  }
+
+  const response = await fetch(url.pathname + url.search);
   if (!response.ok) {
     throw new Error(`API ${path} failed`);
   }

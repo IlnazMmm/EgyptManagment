@@ -26,3 +26,314 @@ th, td { border-bottom: 1px solid #e5e7eb; text-align: left; padding: 12px; }
   .grid.four, .grid.three { grid-template-columns: 1fr; }
   .sidebar { width: 180px; }
 }
+
+.trend-chart {
+  width: 100%;
+}
+
+.trend-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-grid-line {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  fill: #6b7280;
+  font-size: 12px;
+}
+
+.chart-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-line-trend {
+  stroke: #60a5fa;
+}
+
+.chart-line-forecast {
+  stroke: #f4b57a;
+  stroke-dasharray: 5 5;
+}
+
+.chart-dot {
+  fill: #60a5fa;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 26px;
+  height: 0;
+  border-top: 3px solid;
+  border-radius: 6px;
+}
+
+.legend-item.trend .legend-swatch {
+  border-color: #60a5fa;
+}
+
+.legend-item.forecast .legend-swatch {
+  border-color: #f4b57a;
+  border-top-style: dashed;
+}
+
+.factor-subtitle {
+  margin: -4px 0 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.feature-importance-chart {
+  width: 100%;
+}
+
+.feature-importance-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.feature-grid-line {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+}
+
+.feature-axis-label,
+.feature-y-label {
+  fill: #6b7280;
+  font-size: 12px;
+}
+
+.feature-bar {
+  fill: #2f9e57;
+  stroke: #238345;
+  stroke-width: 1;
+}
+
+.sales-filters {
+  margin-bottom: 16px;
+}
+
+.sales-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sales-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.sales-filter-item select {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #111827;
+}
+
+.sales-apply {
+  width: auto;
+  min-width: 130px;
+  margin-bottom: 0;
+}
+
+.sales-kpis .stat strong {
+  font-size: 38px;
+  line-height: 1.1;
+}
+
+.delta {
+  margin: 8px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.delta.up {
+  color: #16a34a;
+}
+
+.delta.down {
+  color: #dc2626;
+}
+
+.sales-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 16px;
+}
+
+.sales-main-chart h3 {
+  margin-bottom: 6px;
+}
+
+.sales-chart-subtitle {
+  margin: 0 0 8px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.sales-combo-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.sales-grid {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+}
+
+.sales-axis-text {
+  fill: #6b7280;
+  font-size: 12px;
+}
+
+.sales-bar {
+  fill: #5d8fe9;
+  opacity: 0.9;
+}
+
+.sales-line {
+  fill: none;
+  stroke: #3b78d4;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sales-dot {
+  fill: #3b78d4;
+}
+
+.sales-side-column {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.sales-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sales-bottom-stats {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sales-bottom-stats .card {
+  margin-bottom: 0;
+  font-size: 18px;
+}
+
+.sales-bottom-stats strong {
+  font-size: 34px;
+}
+
+@media (max-width: 1200px) {
+  .sales-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.forecast-filters {
+  margin-bottom: 16px;
+}
+
+.forecast-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.forecast-apply {
+  width: auto;
+  min-width: 130px;
+  margin-bottom: 0;
+}
+
+.forecast-chart-card h3 {
+  margin-bottom: 6px;
+}
+
+.forecast-combo-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.forecast-bar-history {
+  fill: #3f72d9;
+}
+
+.forecast-bar-predicted {
+  fill: #3f72d9;
+  opacity: 0.3;
+}
+
+.forecast-line {
+  fill: none;
+  stroke: #2d8d6f;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.forecast-dot {
+  fill: #2d8d6f;
+}
+
+.forecast-legend-bar {
+  border-color: #3f72d9 !important;
+}
+
+.forecast-legend-line {
+  border-color: #2d8d6f !important;
+  border-top-style: solid !important;
+}
+
+@media (max-width: 1200px) {
+  .forecast-filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
