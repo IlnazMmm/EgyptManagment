@@ -136,12 +136,21 @@ def sales_analysis() -> dict:
 @app.get("/api/forecast")
 def forecast() -> dict:
     return {
-        "period": "30 дней",
+        "period": "6 месяцев",
+        "labels": ["Янв", "Фев", "Мар", "Апр", "Май", "Июн"],
         "kpis": {
             "revenue": {"value": "1 250 000 ₽", "delta": "+12%"},
             "orders": {"value": "6 420", "delta": "+15%"},
             "avgCheck": {"value": "195 ₽", "delta": "-8%"},
         },
+        "revenueSeries": [
+            {"name": "Фактическая выручка", "values": [920, 1030, 980, 1220, 1160, 1250], "color": "#3b82f6"},
+            {"name": "Прогнозируемая выручка", "values": [900, 1010, 1020, 1180, 1190, 1270], "color": "#f59e0b"},
+        ],
+        "ordersSeries": [
+            {"name": "Фактические заказы", "values": [5100, 5400, 5000, 6100, 5900, 6420], "color": "#10b981"},
+            {"name": "Прогноз заказов", "values": [5000, 5350, 5200, 6000, 6100, 6500], "color": "#a855f7"},
+        ],
     }
 
 
