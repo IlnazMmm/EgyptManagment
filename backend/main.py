@@ -1,8 +1,50 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from db import fetch_all, fetch_one
+
+
+def _linear_regression_forecast(values: list[float], horizon: int) -> list[float]:
+    """Simple OLS linear regression forecast without external dependencies."""
+    n = len(values)
+    if n < 2:
+        return [values[-1] if values else 0.0 for _ in range(horizon)]
+
+    x_mean = (n - 1) / 2
+    y_mean = sum(values) / n
+
+    numerator = sum((i - x_mean) * (v - y_mean) for i, v in enumerate(values))
+    denominator = sum((i - x_mean) ** 2 for i in range(n))
+    slope = numerator / denominator if denominator else 0.0
+    intercept = y_mean - slope * x_mean
+
+    forecast = []
+    for x in range(n, n + horizon):
+        forecast.append(max(0.0, intercept + slope * x))
+    return forecast
+
+
+def _format_compact(value: int) -> str:
+    return f"{value:,}".replace(",", " ")
+
+
+FORECAST_BASE = {
+    "Продукты питания": {
+        "revenue": [420000, 380000, 480000, 700000, 520000, 850000, 610000, 980000, 640000, 720000, 1020000, 690000],
+        "orders": [220, 210, 245, 300, 265, 345, 288, 372, 304, 322, 390, 336],
+    },
+    "Напитки": {
+        "revenue": [360000, 330000, 420000, 620000, 470000, 760000, 540000, 820000, 560000, 620000, 900000, 610000],
+        "orders": [190, 182, 210, 268, 236, 315, 255, 340, 268, 284, 352, 292],
+    },
+    "Бытовая химия": {
+        "revenue": [300000, 280000, 360000, 520000, 430000, 640000, 470000, 700000, 500000, 560000, 760000, 540000],
+        "orders": [155, 148, 182, 232, 205, 270, 221, 292, 226, 241, 308, 250],
+    },
+}
+
+PERIOD_POINTS = {"Последующие 30 дней": 12, "Последующие 14 дней": 8, "Последующие 7 дней": 6}
 
 app = FastAPI(title="AI Retail Analytics API", version="1.0.0")
 
@@ -134,13 +176,70 @@ def sales_analysis() -> dict:
 
 
 @app.get("/api/forecast")
-def forecast() -> dict:
+def forecast(
+    category: str = Query(default="Продукты питания"),
+    period: str = Query(default="Последующие 30 дней"),
+) -> dict:
+    category_data = FORECAST_BASE.get(category, FORECAST_BASE["Продукты питания"])
+    points_count = PERIOD_POINTS.get(period, PERIOD_POINTS["Последующие 30 дней"])
+
+    revenue_history = category_data["revenue"][:points_count]
+    orders_history = category_data["orders"][:points_count]
+
+    horizon = 4
+    revenue_forecast = [round(v) for v in _linear_regression_forecast(revenue_history, horizon)]
+    orders_forecast = [round(v) for v in _linear_regression_forecast(orders_history, horizon)]
+
+    revenue_value = sum(revenue_forecast)
+    orders_value = sum(orders_forecast)
+    avg_check = round(revenue_value / orders_value) if orders_value else 0
+
+    first_revenue_avg = sum(revenue_history[: len(revenue_history) // 2]) / max(1, len(revenue_history) // 2)
+    second_revenue_avg = sum(revenue_history[len(revenue_history) // 2 :]) / max(1, len(revenue_history) - len(revenue_history) // 2)
+    revenue_delta = ((second_revenue_avg - first_revenue_avg) / first_revenue_avg * 100) if first_revenue_avg else 0
+
+    first_orders_avg = sum(orders_history[: len(orders_history) // 2]) / max(1, len(orders_history) // 2)
+    second_orders_avg = sum(orders_history[len(orders_history) // 2 :]) / max(1, len(orders_history) - len(orders_history) // 2)
+    orders_delta = ((second_orders_avg - first_orders_avg) / first_orders_avg * 100) if first_orders_avg else 0
+
+    avg_check_history = [round(r / o) if o else 0 for r, o in zip(revenue_history, orders_history)]
+    avg_check_delta = 0
+    if len(avg_check_history) > 1 and avg_check_history[0] != 0:
+        avg_check_delta = ((avg_check_history[-1] - avg_check_history[0]) / avg_check_history[0]) * 100
+
+    labels = [
+        "5 апр",
+        "8 апр",
+        "10 апр",
+        "12 апр",
+        "16 апр",
+        "18 апр",
+        "22 апр",
+        "25 апр",
+        "27 апр",
+        "30 апр",
+        "2 мая",
+        "5 мая",
+    ][:points_count]
+
     return {
-        "period": "30 дней",
+        "filters": {
+            "category": category,
+            "period": period,
+            "categories": list(FORECAST_BASE.keys()),
+            "periods": list(PERIOD_POINTS.keys()),
+        },
         "kpis": {
-            "revenue": {"value": "1 250 000 ₽", "delta": "+12%"},
-            "orders": {"value": "6 420", "delta": "+15%"},
-            "avgCheck": {"value": "195 ₽", "delta": "-8%"},
+            "revenue": {"value": f"{_format_compact(revenue_value)} ₽", "delta": f"{revenue_delta:+.0f}%"},
+            "orders": {"value": _format_compact(orders_value), "delta": f"{orders_delta:+.0f}%"},
+            "avgCheck": {"value": f"{_format_compact(avg_check)} ₽", "delta": f"{avg_check_delta:+.0f}%"},
+        },
+        "chart": {
+            "labels": labels,
+            "revenueHistory": revenue_history,
+            "revenueForecast": revenue_forecast,
+            "ordersHistory": orders_history,
+            "ordersForecast": orders_forecast,
         },
     }
 
