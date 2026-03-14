@@ -99,3 +99,36 @@ th, td { border-bottom: 1px solid #e5e7eb; text-align: left; padding: 12px; }
   border-color: #f4b57a;
   border-top-style: dashed;
 }
+
+.factor-subtitle {
+  margin: -4px 0 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.feature-importance-chart {
+  width: 100%;
+}
+
+.feature-importance-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.feature-grid-line {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+}
+
+.feature-axis-label,
+.feature-y-label {
+  fill: #6b7280;
+  font-size: 12px;
+}
+
+.feature-bar {
+  fill: #2f9e57;
+  stroke: #238345;
+  stroke-width: 1;
+}
