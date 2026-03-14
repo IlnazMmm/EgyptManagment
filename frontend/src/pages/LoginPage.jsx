@@ -9,8 +9,8 @@ export default function LoginPage({ onLogin }) {
   const submit = async (e) => {
     e.preventDefault();
     try {
-      await login(username, password);
-      onLogin();
+      const data = await login(username, password);
+      onLogin(data.token);
     } catch {
       setError('Неверные учетные данные');
     }

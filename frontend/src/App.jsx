@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
@@ -11,15 +11,36 @@ import ForecastPage from './pages/ForecastPage';
 import AlertsPage from './pages/AlertsPage';
 import UsersPage from './pages/UsersPage';
 
+const AUTH_TOKEN_KEY = 'authToken';
+
 export default function App() {
   const [isAuthed, setIsAuthed] = useState(false);
 
+  useEffect(() => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token) {
+      setIsAuthed(true);
+    }
+  }, []);
+
+  const handleLogin = (token) => {
+    if (token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
+    setIsAuthed(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    setIsAuthed(false);
+  };
+
   if (!isAuthed) {
-    return <LoginPage onLogin={() => setIsAuthed(true)} />;
+    return <LoginPage onLogin={handleLogin} />;
   }
 
   return (
-    <Layout>
+    <Layout onLogout={handleLogout}>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />

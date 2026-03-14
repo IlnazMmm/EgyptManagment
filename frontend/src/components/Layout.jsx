@@ -10,7 +10,7 @@ const links = [
   ['Пользователи', '/users'],
 ];
 
-export default function Layout({ children }) {
+export default function Layout({ children, onLogout }) {
   const location = useLocation();
   return (
     <div className="app-shell">
@@ -23,6 +23,12 @@ export default function Layout({ children }) {
             </Link>
           ))}
         </nav>
+
+        <div className="sidebar-footer">
+          <button type="button" className="logout-button" onClick={onLogout}>
+            Выйти из аккаунта
+          </button>
+        </div>
       </aside>
       <main className="content">{children}</main>
     </div>
