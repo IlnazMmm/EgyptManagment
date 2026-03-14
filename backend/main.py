@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from db import fetch_all, fetch_one
+
 app = FastAPI(title="AI Retail Analytics API", version="1.0.0")
 
 app.add_middleware(
@@ -18,34 +20,27 @@ class LoginRequest(BaseModel):
     password: str
 
 
-MOCK_USERS = [
-    {"id": 1, "name": "Администратор Системы", "email": "admin@x5ingroup.ru", "role": "Администратор", "status": "Активен"},
-    {"id": 2, "name": "Менеджер Продаж", "email": "manager@x5ingroup.ru", "role": "Менеджер", "status": "Активен"},
-]
-
-EMPLOYEES = [
-    {"id": "EMP006", "name": "Albert Flores", "position": "Senior Accountant", "department": "Finance", "risk": "Низкий"},
-    {"id": "EMP014", "name": "Annette Black", "position": "QA Engineer", "department": "IT", "risk": "Не прогнозируется"},
-    {"id": "EMP012", "name": "Bessie Cooper", "position": "Team Lead", "department": "Customer Service", "risk": "Не прогнозируется"},
-    {"id": "EMP010", "name": "Cameron Williamson", "position": "DevOps Engineer", "department": "IT", "risk": "Низкий"},
-]
-
-
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
 
 
+@app.get("/api/health/db")
+def db_health() -> dict:
+    row = fetch_one("SELECT 1 AS ok")
+    return {"status": "ok", "db": row["ok"] == 1}
+
+
 @app.post("/api/login")
 def login(payload: LoginRequest) -> dict:
-    credentials = {
-        "admin": "admin123",
-        "manager": "manager123",
-    }
-    if payload.username in credentials and credentials[payload.username] == payload.password:
+    row = fetch_one(
+        "SELECT username FROM app_users WHERE username = %s AND password = %s",
+        (payload.username, payload.password),
+    )
+    if row:
         return {
             "token": "mock-jwt-token",
-            "username": payload.username,
+            "username": row["username"],
             "dashboardPath": "/dashboard",
         }
     raise HTTPException(status_code=401, detail="Неверные учетные данные")
@@ -65,29 +60,51 @@ def dashboard() -> dict:
 
 @app.get("/api/employees")
 def get_employees() -> dict:
-    return {"items": EMPLOYEES}
+    rows = fetch_all(
+        """
+        SELECT employee_id AS id, full_name AS name, position, department, risk
+        FROM employees
+        ORDER BY employee_id
+        """
+    )
+    return {"items": rows}
 
 
 @app.get("/api/employees/{employee_id}")
 def get_employee(employee_id: str) -> dict:
-    employee = next((e for e in EMPLOYEES if e["id"] == employee_id), None)
+    employee = fetch_one(
+        """
+        SELECT
+          employee_id AS id,
+          full_name AS name,
+          position,
+          department,
+          risk,
+          age,
+          experience,
+          salary,
+          engagement,
+          performance,
+          work_hours AS "workHours"
+        FROM employees
+        WHERE employee_id = %s
+        """,
+        (employee_id,),
+    )
     if not employee:
         raise HTTPException(status_code=404, detail="Сотрудник не найден")
-    return {
-        **employee,
-        "age": 40,
-        "experience": "7 лет 0 мес",
-        "salary": "$95,000",
-        "engagement": "88%",
-        "performance": "92%",
-        "workHours": "38 hrs",
-        "factors": [
-            {"name": "Satisfaction Score", "value": 0.12},
-            {"name": "Work Hours Per Week", "value": 0.08},
-            {"name": "Last Evaluation", "value": 0.06},
-            {"name": "Salary", "value": 0.04},
-        ],
-    }
+
+    factors = fetch_all(
+        """
+        SELECT factor_name AS name, factor_value AS value
+        FROM employee_factors
+        WHERE employee_id = %s
+        ORDER BY factor_value DESC
+        """,
+        (employee_id,),
+    )
+
+    return {**employee, "factors": factors}
 
 
 @app.get("/api/reports")
@@ -140,4 +157,11 @@ def alerts() -> dict:
 
 @app.get("/api/users")
 def users() -> dict:
-    return {"items": MOCK_USERS}
+    rows = fetch_all(
+        """
+        SELECT id, full_name AS name, email, role, status, username
+        FROM app_users
+        ORDER BY id
+        """
+    )
+    return {"items": rows}
