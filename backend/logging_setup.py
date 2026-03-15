@@ -5,7 +5,7 @@ import socket
 import time
 import uuid
 from datetime import datetime, timezone
-from urllib import error, request
+from urllib import request
 
 from fastapi import Request
 
@@ -64,7 +64,9 @@ class ElasticsearchHandler(logging.Handler):
             )
             request.urlopen(req, timeout=0.5).read()
         except Exception:
-            self.handleError(record)
+            # Elasticsearch transport is best-effort: do not break request flow
+            # and do not spam stderr with Python logging internal tracebacks.
+            return
 
 
 def setup_logging() -> None:
