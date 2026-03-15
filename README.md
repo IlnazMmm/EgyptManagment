@@ -34,6 +34,8 @@ docker compose up --build
 - Backend DB health: `http://localhost:8000/api/health/db`
 - Postgres: `localhost:5432` (параметры из `.env`)
 - pgAdmin: `http://localhost:5050` (параметры из `.env`)
+- Elasticsearch: `http://localhost:9200`
+- Kibana: `http://localhost:5601`
 
 Остановка:
 
@@ -70,3 +72,25 @@ docker compose down
 - `GET /api/forecast`
 - `GET /api/alerts`
 - `GET /api/users`
+
+## Логирование в стиле ELK
+
+В проект добавлена централизованная схема логирования для backend и frontend:
+
+- Backend пишет структурированные JSON-логи (stdout + Elasticsearch индекс `egypt-logs-YYYY.MM.DD`).
+- Frontend отправляет клиентские ошибки и события в `POST /api/logs/frontend`.
+- Kibana читает логи из Elasticsearch для поиска и построения дашбордов.
+
+### Что уже логируется
+
+- Все HTTP-запросы backend (метод, путь, статус, длительность, IP).
+- Ошибки backend с traceback.
+- Ошибки frontend: `window.onerror`, `unhandledrejection`.
+- Ошибки API-запросов и события входа из frontend.
+
+### Быстрый старт в Kibana
+
+1. Откройте `http://localhost:5601`.
+2. Перейдите в **Stack Management → Data Views**.
+3. Создайте Data View с шаблоном `egypt-logs-*`.
+4. Используйте поле времени `@timestamp`.
