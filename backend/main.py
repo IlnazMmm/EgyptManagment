@@ -1,12 +1,21 @@
+from datetime import datetime
+from typing import Literal
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from db import fetch_all, fetch_one
+from logging_setup import get_logger, log_request, setup_logging
 from services import AnalyticsService
+
+setup_logging()
+logger = get_logger()
 
 app = FastAPI(title="AI Retail Analytics API", version="1.0.0")
 analytics_service = AnalyticsService()
+
+app.middleware("http")(log_request)
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,6 +29,15 @@ app.add_middleware(
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class FrontendLog(BaseModel):
+    level: Literal["info", "warn", "error"]
+    message: str
+    page: str | None = None
+    userAgent: str | None = None
+    metadata: dict = Field(default_factory=dict)
+    timestamp: datetime | None = None
 
 
 @app.get("/health")
@@ -46,6 +64,25 @@ def login(payload: LoginRequest) -> dict:
             "dashboardPath": "/dashboard",
         }
     raise HTTPException(status_code=401, detail="Неверные учетные данные")
+
+
+@app.post("/api/logs/frontend")
+def ingest_frontend_log(payload: FrontendLog) -> dict:
+    logger.info(
+        "Frontend log event",
+        extra={
+            "event_type": "frontend.log",
+            "frontend": {
+                "level": payload.level,
+                "message": payload.message,
+                "page": payload.page,
+                "user_agent": payload.userAgent,
+                "metadata": payload.metadata,
+                "timestamp": payload.timestamp.isoformat() if payload.timestamp else None,
+            },
+        },
+    )
+    return {"status": "accepted"}
 
 
 @app.get("/api/dashboard")
